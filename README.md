@@ -1,3 +1,5 @@
+![BuildStatus](https://github.com/brysonch/final-nn/actions/workflows/pytest.yml/badge.svg?event=push)
+
 # Final project: neural network
 
 ## Overview

@@ -41,4 +41,13 @@ def one_hot_encode_seqs(seq_arr: List[str]) -> ArrayLike:
                 G -> [0, 0, 0, 1]
             Then, AGA -> [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0].
     """
-    pass
+    
+    mapping = {
+        'A': [1, 0, 0, 0],
+        'T': [0, 1, 0, 0],
+        'C': [0, 0, 1, 0],
+        'G': [0, 0, 0, 1],
+    }
+
+    encodings = [np.hstack(list(map(mapping.get, seq))) for seq in seq_arr]
+    return encodings

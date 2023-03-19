@@ -1,0 +1,17 @@
+[build-system]
+requires = [
+	"flit_core >=3.2,<4",
+	"python_version >= '3.7'"
+	]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "nn"
+authors = [{name = "Bryson Choy", email = "bryson.choy@ucsf.edu"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+dependencies = [
+	"numpy", "pytest", "scikit-learn", "pandas", "matplotlib"
+]
