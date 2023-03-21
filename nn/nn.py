@@ -30,7 +30,7 @@ class NeuralNetwork:
 
     def __init__(
         self,
-        nn_arch: List[Dict[str, Union(int, str)]],
+        nn_arch: List[Dict[str, Union[int, str]]],
         lr: float,
         seed: int,
         batch_size: int,
@@ -110,9 +110,9 @@ class NeuralNetwork:
         Z_curr = np.dot(A_prev, W_curr.T) + b_curr.T
 
         if activation == "relu": 
-            A_curr = _relu(Z_curr)
+            A_curr = self._relu(Z_curr)
         elif activation == "sigmoid":
-            A_curr = _sigmoid(Z_curr)
+            A_curr = self._sigmoid(Z_curr)
         else: return Exception("Not a valid activation function: please choose relu or sigmoid")
 
         return (A_curr, Z_curr)
@@ -403,7 +403,7 @@ class NeuralNetwork:
         
         return dA * 1 * (Z > 0)
 
-    def _binary_cross_entropy(self, y: ArrayLike, y_hat: ArrayLike) -> float:
+    def _binary_cross_entropy(self, y: ArrayLike, y_hat: ArrayLike, eps=1e-5) -> float:
         """
         Binary cross entropy loss function.
 
@@ -418,7 +418,7 @@ class NeuralNetwork:
                 Average loss over mini-batch.
         """
 
-        return -np.mean(y * np.log(y_hat) + (1 - y) * np.log(1 - y_hat))
+        return -np.mean(y * np.log(y_hat + eps) + (1 - y) * np.log(1 - y_hat + eps))
 
     def _binary_cross_entropy_backprop(self, y: ArrayLike, y_hat: ArrayLike) -> ArrayLike:
         """
