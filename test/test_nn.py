@@ -103,7 +103,26 @@ def test_mean_squared_error_backprop():
     assert nn_test._mean_squared_error_backprop(y, y_hat) - 0.24000000000000038 < 1e-05
 
 def test_sample_seqs():
-    pass
+    test_seq = ['AGTACAGAT', 'GCAGTCCGG', 'TTAGATTGC', 'GATCGGATC', 'ATCGTGTCA', 'CGGACTATT']
+    test_label = [1, 0, 0, 1, 0, 0]
+
+    classes = sum(test_label)
+    if classes < len(test_label) / 2:
+        larger_class = test_label.count(0)
+    else: 
+        larger_class = test_label.count(1)
+
+    d = {}
+    for idx, s in enumerate(test_seq):
+        d[s] = test_label[idx]
+
+    processed_seqs, processed_labels = preprocess.sample_seqs(test_seq, test_label)
+
+    assert len(processed_seqs) == len(processed_labels) == larger_class * 2
+    
+    for idx, s in enumerate(processed_seqs):
+        assert s in d
+        assert d[s] == processed_labels[idx]
 
 def test_one_hot_encode_seqs():
     test_seq = ['AGTACAGAT', 'GCAGTCCGG']

@@ -1,7 +1,9 @@
 # Imports
 import numpy as np
+import random
 from typing import List, Tuple
 from numpy.typing import ArrayLike
+from random import choices
 
 def sample_seqs(seqs: List[str], labels: List[bool]) -> Tuple[List[str], List[bool]]:
     """
@@ -21,7 +23,44 @@ def sample_seqs(seqs: List[str], labels: List[bool]) -> Tuple[List[str], List[bo
             List of labels for the sampled sequences
     """
     
-    
+    pos_ind = [i for i, b in enumerate(labels) if b == 1]
+    neg_ind = [i for i, b in enumerate(labels) if b == 0]
+
+    pos_seqs = [seqs[i] for i in pos_ind]
+    neg_seqs = [seqs[i] for i in neg_ind]
+
+    num_pos = len(pos_seqs)
+    num_neg = len(neg_seqs)
+
+    if num_pos < num_neg:
+
+        resampled_pos = choices(pos_seqs, k=num_neg)
+        unshuffled_seqs = resampled_pos + neg_seqs
+        unshuffled_labels = [1] * num_neg + [0] * num_neg
+
+        combined = list(zip(unshuffled_seqs, unshuffled_labels))
+        random.shuffle(combined)
+        resampled_seqs, resampled_labels = zip(*combined)
+
+        return (resampled_seqs, resampled_labels)
+    elif num_pos > num_neg:
+
+        resampled_neg = choices(pos_seqs, k=num_pos)
+        unshuffled_seqs = pos_seqs + resampled_neg
+        unshuffled_labels = [1] * num_pos + [0] * num_pos
+
+        combined = list(zip(unshuffled_seqs, unshuffled_labels))
+        random.shuffle(combined)
+        resampled_seqs, resampled_labels = zip(*combined)
+
+        return (resampled_seqs, resampled_labels)
+
+    combined = list(zip(pos_seqs, neg_seqs))
+    random.shuffle(combined)
+    resampled_seqs, resampled_labels = zip(*combined) 
+
+    return (resampled_seqs, resampled_labels)
+
 
 def one_hot_encode_seqs(seq_arr: List[str]) -> ArrayLike:
     """
