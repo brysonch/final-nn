@@ -107,6 +107,10 @@ class NeuralNetwork:
                 Current layer linear transformed matrix.
         """
 
+        #print("A shapes: ", A_prev.shape)
+        #print("W shapes: ", W_curr.T.shape)
+        #print("b shapes: ", b_curr.T.shape)
+        
         Z_curr = np.dot(A_prev, W_curr.T) + b_curr.T
 
         if activation == "relu": 
@@ -137,7 +141,6 @@ class NeuralNetwork:
         cache['A0'] = Ap
 
         for l in range(1, len(self.arch) + 1):
-
             Wc = self._param_dict['W' + str(l)]
             bc = self._param_dict['b' + str(l)]
             act = self.arch[l - 1]['activation']
@@ -145,7 +148,6 @@ class NeuralNetwork:
 
             Ap = cache['A' + str(l)]
 
-        output = Ap
         return (Ap, cache)
 
 
@@ -183,16 +185,16 @@ class NeuralNetwork:
             db_curr: ArrayLike
                 Partial derivative of loss function with respect to current layer bias matrix.
         """
-        
+
         if activation_curr == "relu": 
-            dZ_curr = _relu_backprop(Z_curr)
+            dZ_curr = self._relu_backprop(dA_curr, Z_curr)
         elif activation_curr == "sigmoid":
-            dZ_curr = _sigmoid_backprop(Z_curr)
+            dZ_curr = self._sigmoid_backprop(dA_curr, Z_curr)
         else: return Exception("Not a valid activation function: please choose relu or sigmoid") 
 
         dA_prev = np.dot(dZ_curr, W_curr)
-        dW_curr = np.dot(dZ_curr, A_prev)
-        db_curr = np.sum(dZ_curr, axis=0)
+        dW_curr = np.dot(dZ_curr.T, A_prev)
+        db_curr = np.sum(dZ_curr, axis=0).reshape(-1, 1)
 
         return (dA_prev, dW_curr, db_curr)
 
@@ -230,7 +232,8 @@ class NeuralNetwork:
                 dAc = self._binary_cross_entropy_backprop(y, y_hat)
             else: return Exception("Not a valid loss function: please choose mse or bce")
 
-            grad_dict['A' + str(l - 1)], grad_dict['W' + str(l)], grad_dict['b' + str(l)] = self._single_backprop(Wc, bc, Zc, Ap, dAc)
+            grad_dict['A' + str(l - 1)], grad_dict['W' + str(l)], grad_dict['b' + str(l)] = self._single_backprop(Wc, bc, Zc, Ap, dAc, act)
+            grad_dict['b' + str(l)] = grad_dict['b' + str(l)].reshape(-1,1)
 
         return grad_dict
 
@@ -244,10 +247,14 @@ class NeuralNetwork:
                 Dictionary containing the gradient information from most recent round of backprop.
         """
         
+        #print("bias 1 before: ", self._param_dict['b1'].shape )
+        #print("bias 2 before: ", self._param_dict['b2'].shape )
         for l in range(1, len(self.arch) + 1):
 
             self._param_dict['W' + str(l)] = self._param_dict['W' + str(l)] - self._lr * grad_dict['W' + str(l)]
             self._param_dict['b' + str(l)] = self._param_dict['b' + str(l)] - self._lr * grad_dict['b' + str(l)]
+        #print("bias 1 updated: ", self._param_dict['b1'].shape )
+        #print("bias 2 updated: ", self._param_dict['b2'].shape )
 
     def fit(
         self,
@@ -292,33 +299,32 @@ class NeuralNetwork:
             y_batch = np.array_split(shuffled_ytrain, num_batches)
 
             loss_train = []
-
             for Xtrain_batch, ytrain_batch in zip(X_batch, y_batch):
 
-                y_pred, cache_train = self.forward(Xtrain_batch)
+                y_pred_train, cache_train = self.forward(Xtrain_batch)
 
                 if self._loss_func == "mse":
-                    loss_train_batch = self._mean_squared_error_backprop(y, y_pred)
+                    loss_train_batch = self._mean_squared_error(ytrain_batch, y_pred_train)
                 elif self._loss_func == "bce":
-                    loss_train_batch = self._binary_cross_entropy_backprop(y, y_pred)
+                    loss_train_batch = self._binary_cross_entropy(ytrain_batch, y_pred_train)
                 else: return Exception("Not a valid loss function: please choose mse or bce")
 
                 loss_train.append(loss_train_batch)
 
-                gradtrain_dict = self.backprop(ytrain_batch, y_pred, cache_train)
+                gradtrain_dict = self.backprop(ytrain_batch, y_pred_train, cache_train)
                 self._update_params(gradtrain_dict)
 
-            loss_train.append(np.mean(loss_train_batch))
+            per_epoch_loss_train.append(np.mean(loss_train))
 
-            y_val = self.predict(X_val)
+            y_pred_val = self.predict(X_val)
 
             if self._loss_func == "mse":
-                loss_val = self._mean_squared_error_backprop(y, y_val)
+                loss_val = self._mean_squared_error(y_val, y_pred_val)
             elif self._loss_func == "bce":
-                loss_val = self._binary_cross_entropy_backprop(y, y_val)
+                loss_val = self._binary_cross_entropy(y_val, y_pred_val)
             else: return Exception("Not a valid loss function: please choose mse or bce")
 
-            per_epoch_loss_val.append(loss_val)
+            per_epoch_loss_val.append(np.mean(loss_val))
                 
         return (per_epoch_loss_train, per_epoch_loss_val)
 
@@ -418,6 +424,8 @@ class NeuralNetwork:
                 Average loss over mini-batch.
         """
 
+        #if y_hat.shape != y.shape:
+        #    y_hat = y_hat.reshape(-1,1)
         return -np.mean(y * np.log(y_hat + eps) + (1 - y) * np.log(1 - y_hat + eps))
 
     def _binary_cross_entropy_backprop(self, y: ArrayLike, y_hat: ArrayLike) -> ArrayLike:
@@ -435,7 +443,7 @@ class NeuralNetwork:
                 partial derivative of loss with respect to A matrix.
         """
         
-        # - np.mean?
+        #y_hat = y_hat.reshape(-1,1)
         return np.mean(((1 - y) / (1 - y_hat)) - (y / y_hat))
 
     def _mean_squared_error(self, y: ArrayLike, y_hat: ArrayLike) -> float:
@@ -453,6 +461,8 @@ class NeuralNetwork:
                 Average loss of mini-batch.
         """
 
+        if y_hat.shape != y.shape:
+            y_hat = y_hat.reshape(-1,1)
         return np.mean((y - y_hat) ** 2)
 
     def _mean_squared_error_backprop(self, y: ArrayLike, y_hat: ArrayLike) -> ArrayLike:
@@ -469,5 +479,7 @@ class NeuralNetwork:
             dA: ArrayLike
                 partial derivative of loss with respect to A matrix.
         """
-        
+
+        if y_hat.shape != y.shape:
+            y_hat = y_hat.reshape(-1,1)
         return np.mean(-2 * (y - y_hat))
