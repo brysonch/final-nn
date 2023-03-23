@@ -23,6 +23,10 @@ def sample_seqs(seqs: List[str], labels: List[bool]) -> Tuple[List[str], List[bo
             List of labels for the sampled sequences
     """
     
+    # Here we upsample the smaller class to match the size of the larger class. First we take the positive and negative sequences, then
+    # randomly sample the smaller class with replacement to match the size of the larger class. We then shuffle the sequence and label 
+    # data together and return both.
+    
     pos_ind = [i for i, b in enumerate(labels) if b == 1]
     neg_ind = [i for i, b in enumerate(labels) if b == 0]
 

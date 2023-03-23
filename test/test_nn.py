@@ -81,6 +81,7 @@ def test_predict():
 def test_binary_cross_entropy():
     y = np.array([1, 1, 0, 1, 1])
     y_hat = np.array([0.8, 0.4, 0.1, 0.7, 0.2])
+    y = y.reshape(-1, 1)
 
     testing.assert_allclose(log_loss(y, y_hat), nn_test._binary_cross_entropy(y, y_hat), rtol=1e-4, atol=0)
 
